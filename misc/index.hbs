@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Adsushi Style Guid</title>
+    
+    <style>
+        
+        .ef-style-guide {
+            width: 800px;
+            margin: 0 auto;
+        }
+        {{{style}}}
+    </style>
+
+    <script>
+        (function () {
+            {{#each modules}}
+                {{{script}}}
+            {{/each}}
+        })();
+    </script>
+</head>
+
+<body>
+
+<div class="ef-style-guide">
+    
+    <h1>Style Guide</h1>
+    <hr/>
+    
+    <div class="content">
+        {{#each modules}}
+            <div class="module">
+                {{{content}}}
+            </div>
+        {{/each}}
+    </div>
+</div>
+
+</body>
+
+</html>

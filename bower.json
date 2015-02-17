@@ -1,0 +1,19 @@
+{
+  "name": "no-name",
+  "version": "0.0.0",
+  "homepage": "",
+  "authors": [
+    "Apollo Tang"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "less": "~2.4.0"
+  }
+}
