@@ -12,14 +12,9 @@ var gulp = require('gulp'),
     sourcemaps = require('gulp-sourcemaps'),
     connect = require('gulp-connect'),
     argv = require('optimist').argv,
-    runSequence = require('run-sequence'),
     gulpif = require('gulp-if');
 
-// var dir_builds = '../../gulp_workfolder/builds';
-var dir_builds = 'builds';
-// var dir_components = '../../gulp_workfolder/components';
-var dir_components = '';
-var dir_jade_comps = dir_components + '**/*.jade';
+var outputDir = 'gulp_builds/development';
 
 console.log ('argv: ', argv);
 
@@ -27,17 +22,65 @@ console.log ('argv: ', argv);
 var env = argv.env || 'development';
 console.log('env: ', env);
 
+var doneInit = false;
 
-gulp.task('jade', function(){
-    return gulp.src(dir_jade_comps)
-    .pipe(jade({pretty: true}))
-    .pipe(gulp.dest(dir_builds))
-    // .pipe(connect.reload());
+gulp.task('initialize', function(cb) {
+    // ref: https://github.com/gulpjs/gulp/blob/master/docs/recipes/running-tasks-in-series.md
+
+    // task initalize only done once
+
+    console.log('doneInit', doneInit );
+    if (!doneInit) {
+        var interval = setInterval(function() {
+            console.log('initialize');
+        }, 100)
+        doneInit = true;
+
+        setTimeout(function(){
+            clearInterval(interval);
+            console.log('done initialize');
+            var err = null; // no error
+            // if err is not null and not undefined, the orchestration will stop
+            cb(err); // call cb to signal task initialize is done
+        }, 3000)
+    } else {
+        var err = null; // no error
+        cb(err)
+    }
 });
 
-gulp.task('js', function(){
+gulp.task('before', ['initialize'], function(cb) {
+    // ref: https://github.com/gulpjs/gulp/blob/master/docs/recipes/running-tasks-in-series.md
+
+    // do stuff -- async or otherwise
+    // will run before task default
+
+    var interval = setInterval(function() {
+        console.log('working on task before');
+    }, 100)
+
+    setTimeout(function(){
+        clearInterval(interval);
+        console.log('done task before');
+        var err = null; // no error
+        // if err is not null and not undefined, the orchestration will stop
+        cb(err); // call cb to signal task before is done
+    }, 3000)
+
+});
+
+
+gulp.task('jade', ['before'], function(){
+    return gulp.src('gulp_src/templates/**/*.jade')
+    .pipe(jade({pretty: true}))
+    .pipe(gulp.dest(outputDir))
+    .pipe(connect.reload());
+});
+
+
+gulp.task('js', ['before'], function(){
     return browserify({
-        entries: ['./src/js/main.js'],
+        entries: ['./gulp_src/js/main.js'],
         debug: env === 'development' // only include source map if NODE_ENV is set 'development'
     })
     .bundle()
@@ -58,13 +101,13 @@ gulp.task('js', function(){
     .pipe(connect.reload());
 });
 
-gulp.task('sass', function(){
+
+gulp.task('sass', ['before'], function(){
     var config = {};
-    console.log(env);
     if (env === 'development') { config.writeSrcMap = true; }
     if (env === 'production') { config.writeSrcMap = false; }
 
-    return gulp.src('src/sass/main.scss')
+    return gulp.src('gulp_src/sass/main.scss')
     .pipe(sourcemaps.init())   // <--- sourcemaps initialize
     .pipe(sass({errLogToConsole: true}))
     .pipe( gulpif( config.writeSrcMap, sourcemaps.write()))
@@ -73,13 +116,15 @@ gulp.task('sass', function(){
     .pipe(connect.reload());
 });
 
-gulp.task('less', function(){
+
+
+gulp.task('less', ['before'],  function(){
     var config = {};
-    console.log(env);
+    console.log('in task less, --env =', env);
     if (env === 'development') { config.writeSrcMap = true; }
     if (env === 'production') { config.writeSrcMap = false; }
 
-    return gulp.src('src/less/main.less')
+    return gulp.src('gulp_src/less/main.less')
     .pipe( sourcemaps.init())   // <--- sourcemaps initialize
     .pipe(less())
     .on('error', function(err){
@@ -97,14 +142,14 @@ gulp.task('less', function(){
     .pipe(connect.reload());
 });
 
-gulp.task('watch', function(){
-    gulp.watch('src/templates/**/*.jade', ['jade']);
-    // gulp.watch('src/js/**/*.js', ['js']);
-    // gulp.watch('src/sass/**/*.scss', ['sass']);
-    // gulp.watch('src/less/**/*.less', ['less']);
+gulp.task('watch', ['before'], function(){
+    gulp.watch('gulp_src/templates/**/*.jade', ['jade']);
+    gulp.watch('gulp_src/js/**/*.js', ['js']);
+    // gulp.watch('gulp_src/sass/**/*.scss', ['sass']);
+    gulp.watch('gulp_src/less/**/*.less', ['less']);
 })
 
-gulp.task('connect', function(){
+gulp.task('connect', ['before'], function(){
 connect.server({
         root: outputDir,
         // open: { browser: 'Google Chrome'}
@@ -113,17 +158,9 @@ connect.server({
     });
 });
 
+
+
 // gulp.task('default', ['js', 'jade', 'sass', 'watch', 'connect']);
-// gulp.task('default', ['js', 'jade', 'less', 'watch', 'connect']);
-// gulp.task('default', ['jade']);
+gulp.task('default', ['js', 'jade', 'less', 'watch', 'connect']);
 
-// if you need to run your task synchronously look for plugin called 'run-sequence'
 
-gulp.task('default', function(callback){
-    runSequence(
-        'before',
-        // ['js', 'jade', 'less', 'watch', 'connect'],
-        ['jade']
-        'after',
-        callback);
-});
